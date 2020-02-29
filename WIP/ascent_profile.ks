@@ -1,11 +1,5 @@
 //
 
-FUNCTION ABORT_FUNC {
-	UNTIL stage:nextDecoupler = "None" {
-    	STAGE.
-    }
-}
-
 FUNCTION EXEC_ASC_PROFILE {
 	PARAMETER profile_list
 	PARAMETER target_APO
@@ -44,9 +38,5 @@ SET ascent_profile TO LIST (
 ).
 
 EXEC_ASC_PROFILE(ascent_profile, 80000).
-ON ABORT {
-    PRINT "Aborting!".
-    ABORT_FUNC().
-}
 
 
