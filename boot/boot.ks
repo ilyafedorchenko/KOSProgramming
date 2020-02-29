@@ -2,6 +2,12 @@
 //=============================================
 SET SHIP:CONTROL:PILOTMAINTHROTTLE TO 0.
 
+FUNCTION ABORT_FUNC {
+	UNTIL stage:nextDecoupler = "None" {
+    	STAGE.
+    }
+}
+
 FUNCTION HAS_FILE_EXECUTE{	//result - true or false whether update file exists in CommandCenter
 							//empty param HAS_FILE_EXECUTE("","")
 	PARAMETER file_path. 	//path "execute_on_ship/shipname.execute.ks"
@@ -82,4 +88,9 @@ IF HAS_FILE_EXECUTE("startup.ks", 1) {
   WAIT 10. // Avoid thrashing the CPU (when no startup.ks, but we have a
            // persistent connection, it will continually reboot).
   REBOOT.
+}
+
+ON ABORT {
+    PRINT "Aborting!".
+    ABORT_FUNC().
 }
