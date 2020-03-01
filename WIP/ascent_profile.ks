@@ -1,21 +1,21 @@
 //
 
 FUNCTION EXEC_ASC_PROFILE {
-	PARAMETER profile_list
-	PARAMETER target_APO
+	PARAMETER profile_list.
+	PARAMETER target_APO.
 
-	SET profile_line TO 0
-	SET proflie_col_num TO 4
-	SET alt_col TO 0
-	SET bear_col TO 1
-	SET incl_col TO 2 
-	SET throt_col TO 3
+	SET profile_line TO 0.
+	SET proflie_col_num TO 4.
+	SET alt_col TO 0.
+	SET bear_col TO 1.
+	SET incl_col TO 2.
+	SET throt_col TO 3.
 
-	LOCK STEERING TO HEADING(profile_list[bear_col + line * 4], profile_list[incl_col + line * 4]).
-	LOCK THROTTLE TO profile_list[throt_col + line * 4].
+	LOCK STEERING TO HEADING(profile_list[bear_col + profile_line * 4], profile_list[incl_col + profile_line * 4]).
+	LOCK THROTTLE TO profile_list[throt_col + profile_line * 4].
 
 	UNTIL APOAPSIS >= target_APO {	// loop checking apoapsis according to proflist[alt_col+line]
-		//		check existance of nex_alt if ok - set next_alt to proflist[alt_col+line+1]	
+									// check existance of nex_alt if ok - set next_alt to proflist[alt_col+line+1]	
 		PRINT "HEADING: " + HEADING AT (0, 0).
 		PRINT "THROTTLE: " + THROTTLE AT (0, 1).
 
@@ -34,9 +34,10 @@ SET ascent_profile TO LIST (
 10000,		0,			80,				1.0,
 30000,		0,			70,				0.5,
 60000,		0,			40,				0.3,
-70000,		0,			0,				0.1,
+70000,		0,			0,				0.1
 ).
 
+STAGE.
 EXEC_ASC_PROFILE(ascent_profile, 80000).
 
 

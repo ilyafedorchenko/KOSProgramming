@@ -3,6 +3,7 @@
 SET SHIP:CONTROL:PILOTMAINTHROTTLE TO 0.
 
 FUNCTION ABORT_FUNC {
+	LOCK THROTTLE TO 0.
 	UNTIL stage:nextDecoupler = "None" {
     	STAGE.
     }
@@ -90,7 +91,7 @@ IF HAS_FILE_EXECUTE("startup.ks", 1) {
   REBOOT.
 }
 
-ON ABORT {
+WHEN ABORT THEN {
     PRINT "Aborting!".
     ABORT_FUNC().
 }
