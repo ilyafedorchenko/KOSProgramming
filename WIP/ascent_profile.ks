@@ -27,19 +27,42 @@ FUNCTION EXEC_ASC_PROFILE {
 		WAIT 0.001. 
 	}
 	LOCK THROTTLE TO 0.
-	PRINT "Ascent profile completed.".
+	PRINT "Ascent completed.".
+}
+
+FUNCTION EXEC_CIRCULARIZE {
+	PARAMETER target_PERI.
+	
+	UNTIL ETA:APOAPSIS >= 15 {
+		CLEARSCREEN.
+		PRINT "ETA to burn: " + (ETA:APOAPSIS - 15) AT (0,1).
+		WAIT 0.001.
+	}
+	
+	LOCK STEERING TO PROGRADE.
+	WAIT 5.
+	LOCK THROTTLE TO 1.
+
+	UNTIL PERIAPSIS >= target_PERI {
+		CLEARSCREEN.
+		PRINT "Burning..." AT (0,1).
+		WAIT 0.001.
+	}
+	LOCK THROTTLE TO 0.
+	CLEARSCREEN.
+	PRINT "Orbit reached." AT (0,1).
 }
 
 SET ascent_profile TO LIST (
 //ALT, 	BEARING,	INCLINATION,	THROT
-0,			0,			90,				1.0,
-10000,		0,			80,				1.0,
-30000,		0,			70,				0.5,
-60000,		0,			40,				0.3,
-70000,		0,			0,				0.1
+0,			90,			90,				1.0,
+10000,		90,			90,				1.0,
+30000,		90,			70,				0.5,
+60000,		90,			45,				0.3,
+70000,		90,			0,				0.1
 ).
 
 STAGE.
-EXEC_ASC_PROFILE(ascent_profile, 80000).
-
+EXEC_ASC_PROFILE(ascent_profile, 72000).
+EXEC_CIRCULARIZE(APOAPSIS).
 
