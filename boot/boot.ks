@@ -2,7 +2,7 @@
 //=============================================
 SET SHIP:CONTROL:PILOTMAINTHROTTLE TO 0.
 
-FUNCTION HAS_FILE_EXECUTE{	//result - true or false whether update file exists in CommandCenter
+FUNCTION HAS_FILE_EXECUTE {	//result - true or false whether update file exists in CommandCenter
 							//empty param HAS_FILE_EXECUTE("","")
 	PARAMETER file_path. 	//path "execute_on_ship/shipname.execute.ks"
 	PARAMETER vol.			// 1 or 0(Archive)
@@ -51,7 +51,7 @@ FUNCTION DELAY{
   }
 }
 
-//==============================================
+//============================MAIN LOOP=========================================
 
 SET execute_script TO SHIP:NAME + ".execute.ks".
 SWITCH TO 1.
@@ -61,14 +61,16 @@ IF HAS_FILE_EXECUTE("execute.ks", 1){
 	DELETEPATH("1:/execute.ks").
 }
 
+IF EXISTS("0:/abort.ks") {COPYPATH("0:/abort.ks", "1:/").}
+
+CLEARSCREEN.
 PRINT "Waiting for execution script.".
 
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-//Add copy and maintain Abort.ks on 1:/
-
-IF ABORT {
+ON ABORT {
+    CLEARSCREEN.
     PRINT "Aborting!".
-    ABORT_FUNC().
+    RUNPATH("1:/abort.ks").
+    RETURN FALSE.
 }
 
 // If we have a connection, see if there are new instructions. If so, download
