@@ -16,8 +16,10 @@ FUNCTION EXEC_ASC_PROFILE {
 
 	UNTIL APOAPSIS >= target_APO {	// loop checking apoapsis according to proflist[alt_col+line]
 									// check existance of nex_alt if ok - set next_alt to proflist[alt_col+line+1]	
-		PRINT "HEADING: " + HEADING AT (0, 0).
-		PRINT "THROTTLE: " + THROTTLE AT (0, 1).
+		CLEARSCREEN.
+		PRINT "BEARING: " + profile_list[bear_col + profile_line * 4] AT (0, 0).
+		PRINT "INCLINATION: " + profile_list[incl_col + profile_line * 4] AT (0, 1).
+		PRINT "THROTTLE: " + profile_list[throt_col + profile_line * 4] AT (0, 2).
 
 		IF ALTITUDE > profile_list[alt_col + profile_line * 4] {
 			SET profile_line TO profile_line + 1.

@@ -2,21 +2,6 @@
 //=============================================
 SET SHIP:CONTROL:PILOTMAINTHROTTLE TO 0.
 
-FUNCTION ABORT_FUNC {
-	LOCK THROTTLE TO 0.
-	SET SHIP:CONTROL:PILOTMAINTHROTTLE TO 0.
-	UNTIL stage:nextDecoupler = "None" {
-    	STAGE.
-    }
-    STAGE.
-    LOCK STEERING TO SRFRETROGRADE.
-    WHEN (SHIP:STATUS = "LANDED" OR SHIP:STATUS = "SPLASHED") THEN { 	//Didn't work, I guess, reboot was the cause
-    	UNLOCK ALL.														// Check if call of separate script will work better
-    	PRINT "Flight complete".
-
-    }
-}
-
 FUNCTION HAS_FILE_EXECUTE{	//result - true or false whether update file exists in CommandCenter
 							//empty param HAS_FILE_EXECUTE("","")
 	PARAMETER file_path. 	//path "execute_on_ship/shipname.execute.ks"
@@ -78,6 +63,9 @@ IF HAS_FILE_EXECUTE("execute.ks", 1){
 
 PRINT "Waiting for execution script.".
 
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//Add copy and maintain Abort.ks on 1:/
+
 IF ABORT {
     PRINT "Aborting!".
     ABORT_FUNC().
@@ -94,12 +82,7 @@ IF ADDONS:RT:HASCONNECTION(SHIP) {
 	}
 }
 
-// If a startup.ks file exists on the disk, run that.
-IF HAS_FILE_EXECUTE("startup.ks", 1) {
-  RUNPATH("1:/startup.ks").
-} ELSE {
-  WAIT UNTIL ADDONS:RT:HASCONNECTION(SHIP).
-  WAIT 10. // Avoid thrashing the CPU (when no startup.ks, but we have a
-           // persistent connection, it will continually reboot).
-  REBOOT.
-}
+WAIT 10. // Avoid thrashing the CPU (when no startup.ks, but we have a
+        // persistent connection, it will continually reboot).
+WAIT UNTIL ADDONS:RT:HASCONNECTION(SHIP).
+REBOOT.
