@@ -54,9 +54,9 @@ FUNCTION EXEC_ASC_PROFILE {
 FUNCTION EXEC_CIRCULARIZE { // DOESN'T WORK PROPERLY, need calculation of dV for circularization and time to burn 
 	PARAMETER target_PERI.
 	
-	UNTIL ETA:APOAPSIS < 15 {
+	UNTIL ETA:APOAPSIS < 12 {
 		CLEARSCREEN.
-		PRINT "ETA to burn: " + (ETA:APOAPSIS - 15) AT (0,1).
+		PRINT "ETA to burn: " + (ETA:APOAPSIS - 12) AT (0,1).
 		WAIT 0.
 	}
 	
@@ -83,6 +83,7 @@ SET ascent_profile TO LIST (
 //ALT, 	BEARING,	INCLINATION,	THROT
 0,			90,			90,				1.0,
 5000,		90,			85,				0.9,
+10000,		90,			80,				0.9,
 15000,		90,			45,				0.7,
 30000,		90,			15,				0.6,
 60000,		90,			0,				0.3
