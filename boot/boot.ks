@@ -62,6 +62,7 @@ IF HAS_FILE_EXECUTE("execute.ks", 1){
 }
 
 IF EXISTS("0:/abort.ks") {COPYPATH("0:/abort.ks", "1:/").}
+IF EXISTS("0:/libs.ks") {COPYPATH("0:/libs.ks", "1:/").}
 
 CLEARSCREEN.
 PRINT "Waiting for execution script.".
