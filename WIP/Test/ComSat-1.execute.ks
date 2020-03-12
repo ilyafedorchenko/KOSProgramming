@@ -2,12 +2,13 @@ RUNPATH ("1:/libs.ks").
 
 PRINT "Total dV of the Ship is: " + dV_CALC_SHIP().
 
-SET dV TO dV_CALC_Hohmann(-140000,100000).
+SET dV TO dV_CALC_Hohmann(PERIAPSIS,250000).
 FOR x IN dV {
 	PRINT "Needed dV to go to 100 000 is: " + x.
 	PRINT "Time of burn: " + Time_CALC_MNV(x).	
 }
 
+LOCK STEERING TO HEADING(0,0).
 //SET t TO 0.
 
 //UNTIL t > 600 {

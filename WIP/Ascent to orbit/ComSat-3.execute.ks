@@ -32,7 +32,7 @@ FUNCTION EXEC_ASC_PROFILE {
 			}
 		}
 
-	UNTIL APOAPSIS >= target_APO {	// loop checking apoapsis according to proflist[alt_col+line]
+	UNTIL APOAPSIS > target_APO {	// loop checking apoapsis according to proflist[alt_col+line]
 									// check existance of nex_alt if ok - set next_alt to proflist[alt_col+line+1]	
 		
 		PRINT "BEARING: " + profile_list[bear_col + profile_line * proflie_col_num] AT (0, 0).
@@ -46,52 +46,74 @@ FUNCTION EXEC_ASC_PROFILE {
 	}
 
 	LOCK THROTTLE TO 0.
+	TOGGLE LIGHTS.
+
+	WAIT UNTIL ALTITUDE > 70000.
+
 	PRINT "Ascent completed.".
-	WAIT 3.
 
 }
 
-FUNCTION EXEC_CIRCULARIZE { // DOESN'T WORK PROPERLY, need calculation of dV for circularization and time to burn 
+FUNCTION EXEC_CIRCULARIZE { 
 	PARAMETER target_PERI.
+	CLEARSCREEN.
 	
-	UNTIL ETA:APOAPSIS < 12 {
-		CLEARSCREEN.
-		PRINT "ETA to burn: " + (ETA:APOAPSIS - 12) AT (0,1).
+	SET dV_LIST TO dV_CALC_Hohmann(PERIAPSIS, target_PERI).
+
+	PRINT "dV needed: " + dV_LIST AT (0,20).
+	PRINT "dV to Burn: " + dV_LIST[1] AT (0,21).
+	PRINT "From R1: " + PERIAPSIS AT (0,27).
+	PRINT "To R2: " + target_PERI AT (0,28).
+
+	SET Burn_Time TO Time_CALC_MNV(dV_LIST[1]).
+	PRINT "Burn time: " + Burn_Time AT (0,4).
+
+	LOCK STEERING TO PROGRADE.
+
+	UNTIL ETA:APOAPSIS <= Burn_Time/2 {
+		PRINT "ETA to burn: " + (ETA:APOAPSIS - Burn_Time/2) AT (0,5).
 		WAIT 0.
 	}
 	
-	LOCK STEERING TO PROGRADE.
-	WAIT 2.
 	LOCK THROTTLE TO 1.
-	PRINT "Burning..." AT (0,2).
+	PRINT "Burning..." AT (0,7).
 	
-	WHEN PERIAPSIS >= target_PERI*0.8 THEN LOCK THROTTLE TO 0.2.
 	WHEN PERIAPSIS >= target_PERI THEN {
 		LOCK THROTTLE TO 0.
-		PRINT "Orbit reached." AT (0,5).
+		PRINT "Orbit reached." AT (0,7).
 		RETURN FALSE.
 	}
 
 	UNTIL PERIAPSIS >= target_PERI {
-		PRINT "Target_PERI: " + target_PERI AT (0,3).
-		PRINT "PERIAPSIS: " + PERIAPSIS AT (0,4).
+		PRINT "Target_PERI: " + target_PERI AT (0,8).
+		PRINT "PERIAPSIS: " + PERIAPSIS AT (0,9).
 		WAIT 0.
 	}
 }
 
+//=======================================MAIN=========================================
+
+RUNPATH ("1:/libs.ks").
+
 SET ascent_profile TO LIST (
 //ALT, 	BEARING,	INCLINATION,	THROT
 0,			90,			90,				1.0,
-5000,		90,			85,				0.9,
-10000,		90,			80,				0.9,
-15000,		90,			45,				0.7,
-30000,		90,			15,				0.6,
-60000,		90,			0,				0.3
+5000,		90,			85,				1.0,
+10000,		90,			80,				1.0,
+15000,		90,			45,				0.9,
+30000,		90,			25,				0.9,
+60000,		90,			0,				0.5
 ).
 
 STAGE.
-EXEC_ASC_PROFILE(ascent_profile, 70500).
+EXEC_ASC_PROFILE(ascent_profile, 100000).
+
+STAGE.
+//LIST ENGINES IN ShipEngines.
+//SET NumberOfEngines TO ShipEngines:LENGTH.
+//SET ShipEngines[NumberOfEngines - 1]:THRUSTLIMIT TO 50.
+
 EXEC_CIRCULARIZE(APOAPSIS).
 
-PRINT "Script execution completed." AT (0,6).
+PRINT "Script execution completed." AT (0,10).
 WAIT 15.
