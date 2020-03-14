@@ -2,17 +2,36 @@
 //=============================================
 SET SHIP:CONTROL:PILOTMAINTHROTTLE TO 0.
 
+FUNCTION WAIT_VISUAL{	// Visualize waiting period [###....]
+	PARAMETER t. //How much seconds to wait
+	PARAMETER col_. // AT (col_,)
+	PARAMETER row_. // AT (,row_)
+
+	LOCAL scale IS "".
+
+	FROM {LOCAL x IS 0.} UNTIL x = t STEP {SET x TO x + 1.} DO {
+		SET scale TO scale + ".".
+	}
+
+	PRINT "[" + scale + "]" AT (col_, row_). // draw scale to fill
+
+	FROM {LOCAL x IS 1.} UNTIL x = t+1 STEP {SET x TO x + 1.} DO {
+		PRINT "#" AT (col_ + x, row_).
+		WAIT 1.
+	}
+}
+
 FUNCTION HAS_FILE_EXECUTE {	//result - true or false whether update file exists in CommandCenter
 							//empty param HAS_FILE_EXECUTE("","")
 	PARAMETER file_path. 	//path "execute_on_ship/shipname.execute.ks"
 	PARAMETER vol.			// 1 or 0(Archive)
 	
-	IF file_path = "" {
-		SET file_path_ TO "execute_on_ship/" + execute_script.
-		SET vol_ to "0".
-	} ELSE {
+	LOCAL file_path_ IS "execute_on_ship/" + execute_script.
+	LOCAL vol_ IS "0".
+
+	IF file_path <> "" {
 		SET file_path_ TO file_path.
-		SET vol_ to vol.
+		SET vol_ TO vol.
 	}
 	RETURN EXISTS(vol_+":/"+file_path_).
 }
@@ -22,12 +41,12 @@ FUNCTION DOWNLOAD_UPDATE{	//result - file 1:/execute.ks ready for execution
 	PARAMETER file_path. 	//path "execute_on_ship/shipname.execute.ks"
 	PARAMETER vol.			// 1 or 0(Archive)
 	
-	IF file_path = "" {
-		SET file_path_ TO "execute_on_ship/" + execute_script.
-		SET vol_ to "0".
-	} ELSE {
+	LOCAL file_path_ IS "execute_on_ship/" + execute_script.
+	LOCAL vol_ IS "0".
+
+	IF file_path <> "" {
 		SET file_path_ TO file_path.
-		SET vol_ to vol.
+		SET vol_ TO vol.
 	}
 	MOVEPATH(vol_ + ":/" + file_path_, "1:/execute.ks").
 }
@@ -61,15 +80,20 @@ IF HAS_FILE_EXECUTE("execute.ks", 1){
 	DELETEPATH("1:/execute.ks").
 }
 
-IF EXISTS("0:/abort.ks") {COPYPATH("0:/abort.ks", "1:/").}
-IF EXISTS("0:/libs.ks") {COPYPATH("0:/libs.ks", "1:/").}
-
 CLEARSCREEN.
-PRINT "Waiting for execution script.".
+PRINT "Waiting for execution script." AT(0,1).
+PRINT "Local scripts:" AT(0,2).
+LIST.
+
+IF ADDONS:RT:HASCONNECTION(SHIP) {
+	PRINT "Scripts in archive:".
+	CD("0:/execute_on_ship/").
+	LIST.
+}
 
 ON ABORT {
     CLEARSCREEN.
-    PRINT "Aborting!".
+    PRINT "Aborting!" AT(0,1).
     RUNPATH("1:/abort.ks").
     RETURN FALSE.
 }
@@ -78,6 +102,8 @@ ON ABORT {
 // and run them.
 
 IF ADDONS:RT:HASCONNECTION(SHIP) {
+	IF EXISTS("0:/abort.ks") {COPYPATH("0:/abort.ks", "1:/").}
+	IF EXISTS("0:/libs.ks") {COPYPATH("0:/libs.ks", "1:/").}
 	IF HAS_FILE_EXECUTE("","") {
 		DOWNLOAD_UPDATE("","").
 		RUNPATH("1:/execute.ks").
@@ -85,7 +111,8 @@ IF ADDONS:RT:HASCONNECTION(SHIP) {
 	}
 }
 
-WAIT 10. // Avoid thrashing the CPU (when no startup.ks, but we have a
-        // persistent connection, it will continually reboot).
+WAIT_VISUAL(10,0,0). 	// Avoid thrashing the CPU (when no startup.ks, but we have a
+        				// persistent connection, it will continually reboot).
+
 WAIT UNTIL ADDONS:RT:HASCONNECTION(SHIP).
 REBOOT.

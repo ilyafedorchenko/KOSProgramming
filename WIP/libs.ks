@@ -1,5 +1,24 @@
 // All handy functions
 
+FUNCTION WAIT_VISUAL{	// Visualize waiting period [###....]
+	PARAMETER t. //How much seconds to wait
+	PARAMETER col_. // AT (col_,)
+	PARAMETER row_. // AT (,row_)
+
+	LOCAL scale IS "".
+
+	FROM {LOCAL x IS 0.} UNTIL x = t STEP {SET x TO x + 1.} DO {
+		SET scale TO scale + ".".
+	}
+
+	PRINT "[" + scale + "]" AT (col_, row_). // draw scale to fill
+
+	FROM {LOCAL x IS 1.} UNTIL x = t+1 STEP {SET x TO x + 1.} DO {
+		PRINT "#" AT (col_ + x, row_).
+		WAIT 1.
+	}
+}
+
 FUNCTION ISH {
 	PARAMETER target_value.
 	PARAMETER actual_value.
@@ -73,14 +92,7 @@ FUNCTION WPT_COORD {
 LOCAL my_WPS TO ALLWAYPOINTS().
 		FOR t in my_WPS {
 			IF t:ISSELECTED {
-				CLEARSCREEN.
-				PRINT "Name: " 							+ t:NAME.
-				PRINT "GEOPOSITION LAT: " 				+ t:GEOPOSITION:LAT.
-				PRINT "GEOPOSITION LNG: " 				+ t:GEOPOSITION:LNG.
-				PRINT "GEOPOSITION DISTANCE: " 			+ t:GEOPOSITION:DISTANCE.
-				PRINT "GEOPOSITION TERRAINHEIGHT: " 	+ t:GEOPOSITION:TERRAINHEIGHT.
-				PRINT "GEOPOSITION HEADING: " 			+ t:GEOPOSITION:HEADING.
-				PRINT "GEOPOSITION BEARING: " 			+ t:GEOPOSITION:BEARING.
+				RETURN (t).
 			}
 		}
 }
@@ -93,7 +105,7 @@ FUNCTION ApoBurn	//Считает угол к горизонту в апоцен
 	set Rad to ship:body:radius+ship:altitude. // Радиус орбиты.
 	set Vorb to sqrt(ship:body:Mu/Rad). //Это 1я косм. на данной высоте.
 	set g_orb to ship:body:Mu/Rad^2. //Ускорение своб. падения на этой высоте.
-	set ThrIsp to EngThrustIsp. //EngThrustIsp возвращает суммарную тягу и средний Isp по всем активным двигателям.
+	set ThrIsp to EngThrustIsp(). //EngThrustIsp возвращает суммарную тягу и средний Isp по всем активным двигателям.
 	set AThr to ThrIsp[0]*Throttle/(ship:mass). //Ускорение, которое сообщают ракете активные двигатели при тек. массе. 
 	set ACentr to Vh^2/Rad. //Центростремительное ускорение.
 	set DeltaA to g_orb-ACentr-Max(Min(Vz,2),-2). //Уск своб падения минус центр. ускорение с поправкой на гашение вертикальной скорости.
@@ -102,6 +114,19 @@ FUNCTION ApoBurn	//Считает угол к горизонту в апоцен
 	RETURN LIST(Fi, Vh, Vz, Vorb, dVh, DeltaA).	//Возвращаем лист с данными.
 }
 
+FUNCTION ANBurn	//Считает угол к нормали и dV для маневра по наклонению орбиты.
+{
+	PARAMETER Vorb. 	//Текущая орбитальная скорость
+	PARAMETER dINCL.	//Угол увеличения наклонения
+
+	SET dVz TO sin(dINCL)*Vorb. //Вертиальный компонент изменения скорости
+	SET dVretro TO (1-cos(dINCL))*Vorb. // Горизонтальный ретро компонент изменения скорости
+
+	SET dVorb TO SQRT(dVz^2+dVretro^2).
+	SET Fi TO arctan(dVretro/dVz).
+	
+	RETURN LIST(Fi, dVorb).	//Возвращаем лист с данными.
+}
 
 FUNCTION EngThrustIsp	//EngThrustIsp возвращает суммарную тягу и средний Isp по всем активным двигателям.
 {

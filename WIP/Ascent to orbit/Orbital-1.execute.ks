@@ -2,56 +2,55 @@
 
 FUNCTION ALTER_ASC_PROFILE {
 
-// Твердотопливный ускоритель отрабатывает чисто вертикально.
-LOCK Steering to Heading(90,90). 
-LOCK Throttle to 1.
-STAGE.
-WAIT UNTIL STAGE:SOLIDFUEL<1.
-
-//Вторая ступень отрабатывает тангаж от 90 до 40 градусов по мере расхода топлива.
-//Апоапсис в результате получится около 75 км. Это чисто опытная подгонка (да, нубство, хехе)
-STAGE.
-SET MaxFuel to STAGE:OXIDIZER.
-LOCK Steering to Heading(90,90-50*(1-STAGE:OXIDIZER/MaxFuel)).
-WAIT UNTIL STAGE:OXIDIZER<1.
-LOCK Steering to Heading(90,40).
-LOCK Throttle to 0.
-WAIT 1.
-STAGE.
-
-//Ждем апоапсиса
-UNTIL ETA:Apoapsis<1
-{
-clearscreen.
-print "ETA:Apo: " + ETA:Apoapsis.
-}
-//Начинаем циркуляризацию
-STAGE.
-LOCK Throttle to 1.
-
-set StopBurn to false.
-until StopBurn
-{
-	Set CirkData to ApoBurn. //Достаем данные по тангажу и прочее из функции ApoBurn
-
-	if CirkData[4]<0
-		set StopBurn to true.	//Если достигли 1й космической, то стоп.
-	else if CirkData[4]<100		//Если дельта до 1й космической менее 100м/с, то начинаем плавно снижать тягу.
-		LOCK Throttle to Max(CirkData[4]/100, 0.01).
-
-	LOCK Steering to Heading(90, CirkData[0]). //Угол тагажа выставляем по данным, возвращенным функцией.
-
-// Чего возвращает ApoBurn
-//				0	1	2   3     4    5 			
-//	RETURN LIST(Fi, Vh, Vz, Vorb, dVh, DeltaA).	
+	// Твердотопливный ускоритель отрабатывает чисто вертикально.
+	LOCK Steering to Heading(90,90). 
+	LOCK Throttle to 1.
+	STAGE.
+	WAIT UNTIL STAGE:SOLIDFUEL<1.
 	
-	clearscreen.
-	print "Fi: "+CirkData[0].	
-	print "Vh: "+CirkData[1].
-	print "Vz: "+CirkData[2].	
-	print "Vorb: "+CirkData[3].	
-	print "dVh: "+CirkData[4].		
-	print "DeltaA: "+CirkData[5].	
+	//Вторая ступень отрабатывает тангаж от 90 до 40 градусов по мере расхода топлива.
+	//Апоапсис в результате получится около 75 км. Это чисто опытная подгонка (да, нубство, хехе)
+	STAGE.
+	SET MaxFuel to STAGE:OXIDIZER.
+	LOCK Steering to Heading(90,90-60*(1-STAGE:OXIDIZER/MaxFuel)).
+	WAIT UNTIL STAGE:OXIDIZER<1.
+	LOCK Steering to PROGRADE.
+	LOCK Throttle to 0.
+	WAIT 1.
+	STAGE.
+	
+	//Ждем апоапсиса
+	UNTIL ETA:Apoapsis<1
+	{
+		clearscreen.
+		print "ETA:Apo: " + ETA:Apoapsis.
+	}
+	//Начинаем циркуляризацию
+	LOCK Throttle to 1.
+	
+	set StopBurn to false.
+	until StopBurn
+	{
+		Set CirkData to ApoBurn(). //Достаем данные по тангажу и прочее из функции ApoBurn
+	
+		if CirkData[4]<0
+			set StopBurn to true.	//Если достигли 1й космической, то стоп.
+		else if CirkData[4]<100		//Если дельта до 1й космической менее 100м/с, то начинаем плавно снижать тягу.
+			LOCK Throttle to Max(CirkData[4]/100, 0.01).
+	
+		LOCK Steering to Heading(90, CirkData[0]). //Угол тагажа выставляем по данным, возвращенным функцией.
+	
+	// Чего возвращает ApoBurn
+	//				0	1	2   3     4    5 			
+	//	RETURN LIST(Fi, Vh, Vz, Vorb, dVh, DeltaA).	
+		
+		clearscreen.
+		print "Fi: "+CirkData[0].	
+		print "Vh: "+CirkData[1].
+		print "Vz: "+CirkData[2].	
+		print "Vorb: "+CirkData[3].	
+		print "dVh: "+CirkData[4].		
+		print "DeltaA: "+CirkData[5].	
 }
 
 //Мы на орбите, выключаем тягу.
@@ -171,7 +170,7 @@ SET ascent_profile TO LIST (
 60000,		45,			1.0
 ).
 
-STAGE.
+//STAGE.
 //EXEC_ASC_PROFILE(ascent_profile, 80000, 89.95).
 ALTER_ASC_PROFILE().
 
