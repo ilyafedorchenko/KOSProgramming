@@ -89,6 +89,7 @@ IF ADDONS:RT:HASCONNECTION(SHIP) {
 	PRINT "Scripts in archive:".
 	CD("0:/execute_on_ship/").
 	LIST.
+	SWITCH TO 1.
 }
 
 ON ABORT {

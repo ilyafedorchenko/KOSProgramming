@@ -119,11 +119,14 @@ FUNCTION ANBurn	//Считает угол к нормали и dV для ман�
 	PARAMETER Vorb. 	//Текущая орбитальная скорость
 	PARAMETER dINCL.	//Угол увеличения наклонения
 
-	SET dVz TO sin(dINCL)*Vorb. //Вертиальный компонент изменения скорости
-	SET dVretro TO (1-cos(dINCL))*Vorb. // Горизонтальный ретро компонент изменения скорости
+	SET dVz TO -VCRS(SHIP:VELOCITY:ORBIT, BODY:POSITION).
+	SET dVZ:MAG TO sin(dINCL)*Vorb. //Вертиальный компонент изменения скорости
+	SET dVretro TO SHIP:RETROGRADE:VECTOR.
+	SET dVretro:MAG TO (1-cos(dINCL))*Vorb. // Горизонтальный ретро компонент изменения скорости
 
-	SET dVorb TO SQRT(dVz^2+dVretro^2).
-	SET Fi TO arctan(dVretro/dVz).
+	//SET dVorb TO SQRT(dVz^2+dVretro^2).
+	SET dVorb TO dVz + dVretro.
+	SET Fi TO arctan(dVretro:MAG/dVz:MAG).
 	
 	RETURN LIST(Fi, dVorb).	//Возвращаем лист с данными.
 }
