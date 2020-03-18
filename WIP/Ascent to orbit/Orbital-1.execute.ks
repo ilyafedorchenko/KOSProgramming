@@ -18,46 +18,6 @@ FUNCTION ALTER_ASC_PROFILE {
 	LOCK Throttle to 0.
 	WAIT 1.
 	STAGE.
-	
-	//Ждем апоапсиса
-	UNTIL ETA:Apoapsis<1
-	{
-		clearscreen.
-		print "ETA:Apo: " + ETA:Apoapsis.
-	}
-	//Начинаем циркуляризацию
-	LOCK Throttle to 1.
-	
-	set StopBurn to false.
-	until StopBurn
-	{
-		Set CirkData to ApoBurn(). //Достаем данные по тангажу и прочее из функции ApoBurn
-	
-		if CirkData[4]<0
-			set StopBurn to true.	//Если достигли 1й космической, то стоп.
-		else if CirkData[4]<100		//Если дельта до 1й космической менее 100м/с, то начинаем плавно снижать тягу.
-			LOCK Throttle to Max(CirkData[4]/100, 0.01).
-	
-		LOCK Steering to Heading(90, CirkData[0]). //Угол тагажа выставляем по данным, возвращенным функцией.
-	
-	// Чего возвращает ApoBurn
-	//				0	1	2   3     4    5 			
-	//	RETURN LIST(Fi, Vh, Vz, Vorb, dVh, DeltaA).	
-		
-		clearscreen.
-		print "Fi: "+CirkData[0].	
-		print "Vh: "+CirkData[1].
-		print "Vz: "+CirkData[2].	
-		print "Vorb: "+CirkData[3].	
-		print "dVh: "+CirkData[4].		
-		print "DeltaA: "+CirkData[5].	
-}
-
-//Мы на орбите, выключаем тягу.
-LOCK Throttle to 0.
-Set SHIP:CONTROL:PILOTMAINTHROTTLE to 0.
-WAIT 1.
-
 }
 
 
@@ -173,9 +133,10 @@ SET ascent_profile TO LIST (
 //STAGE.
 //EXEC_ASC_PROFILE(ascent_profile, 80000, 89.95).
 ALTER_ASC_PROFILE().
+CIRC_MNV().
 
 //STAGE.
 //EXEC_CIRCULARIZE(APOAPSIS).
 
-PRINT "Script execution completed." AT (0,6).
-WAIT 15.
+PRINT "Script execution completed." AT (0,9).
+WAIT_VISUAL(20,0,0).
