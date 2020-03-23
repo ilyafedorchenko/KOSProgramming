@@ -92,11 +92,12 @@ IF ADDONS:RT:HASCONNECTION(SHIP) {
 	SWITCH TO 1.
 }
 
-ON ABORT {
-    CLEARSCREEN.
-    PRINT "Aborting!" AT(0,1).
-    RUNPATH("1:/abort.ks").
-    RETURN FALSE.
+ON Abort {
+    clearscreen.
+    print "Aborting!" AT(0,1).
+    unlock all.
+    runpath("1:/abort.ks").
+    return false.
 }
 
 // If we have a connection, see if there are new instructions. If so, download
@@ -105,6 +106,8 @@ ON ABORT {
 IF ADDONS:RT:HASCONNECTION(SHIP) {
 	IF EXISTS("0:/abort.ks") {COPYPATH("0:/abort.ks", "1:/").}
 	IF EXISTS("0:/libs.ks") {COPYPATH("0:/libs.ks", "1:/").}
+	IF EXISTS("0:/exec_node.ks") {COPYPATH("0:/exec_node.ks", "1:/").}
+	IF EXISTS("0:/solar.ks") {COPYPATH("0:/solar.ks", "1:/").}
 	IF HAS_FILE_EXECUTE("","") {
 		DOWNLOAD_UPDATE("","").
 		RUNPATH("1:/execute.ks").

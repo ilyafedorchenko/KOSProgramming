@@ -41,7 +41,7 @@ LOCK STEERING TO burnDATA[1].
 
 PRINT "==============================" AT(0,5).
 PRINT "burnT: " + ROUND(burnT) AT(0,6).
-PRINT "burnDATA Fi: " + burnDATA[0] AT(0,7).
+PRINT "burnDATA Vector: " + burnDATA[0] AT(0,7).
 PRINT "burnDATA Fi: " + burnDATA[1] AT(0,8).
 
 UNTIL ABS(dAngle) < 0.5  {
@@ -55,7 +55,7 @@ UNTIL ABS(dAngle) < 0.5  {
 PRINT "Burning s:" + burnT AT(0,13).
 
 LOCK THROTTLE TO 1.
-WAIT_VISUAL(ROUND(burnT+2),0,0).
+WAIT_VISUAL(ROUND(burnT+2),0,0). //???????????????????????????
 LOCK THROTTLE TO 0.
 
 PRINT "SHIP:ORBIT:INCLINATION " + SHIP:ORBIT:INCLINATION  AT(0,9).
