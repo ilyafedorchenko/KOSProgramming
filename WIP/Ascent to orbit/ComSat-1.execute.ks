@@ -1,113 +1,98 @@
 //
 
-FUNCTION EXEC_ASC_PROFILE {
-	PARAMETER profile_list.
-	PARAMETER target_APO.
+function SetInclination {
+	parameter _Incl_0.		// Starting inclination
+	parameter _Incl_1.		// Desired inclination
+	parameter _Alt_0.		// Starting Alt for inclination change
+	parameter _Alt_1.		// Desired altitude for desired inclination
 
-	SET profile_line TO 0.
-	SET proflie_col_num TO 4.
-	SET last_line TO (profile_list:LENGTH / proflie_col_num - 1).
+	declare local _AltReach to (Altitude - _Alt_0) / (_Alt_1 - _Alt_0). // 0..1 
+	declare local _Incl to _Incl_0 + _AltReach * (_Incl_1 - _Incl_0).  // Inclination to return 
 
-	SET alt_col TO 0.
-	SET bear_col TO 1.
-	SET incl_col TO 2.
-	SET throt_col TO 3.
-
-	CLEARSCREEN.
-
-	LOCK STEERING TO HEADING(profile_list[bear_col + profile_line * proflie_col_num], profile_list[incl_col + profile_line * proflie_col_num]).
-	LOCK THROTTLE TO profile_list[throt_col + profile_line * proflie_col_num].
-
-	WHEN MAXTHRUST < 0.001 THEN {	//Stage_dirty - to refactor
-			STAGE.
-			RETURN TRUE.
-		} 
-
-	WHEN ALTITUDE >= profile_list[alt_col + (profile_line + 1) * proflie_col_num] THEN {
-			SET profile_line TO profile_line + 1.
-			IF (last_line - profile_line) > 0 {
-				RETURN TRUE.	
-			} ELSE {
-				RETURN FALSE.
-			}
-		}
-
-	UNTIL APOAPSIS > target_APO {	// loop checking apoapsis according to proflist[alt_col+line]
-									// check existance of nex_alt if ok - set next_alt to proflist[alt_col+line+1]	
-		
-		PRINT "BEARING: " + profile_list[bear_col + profile_line * proflie_col_num] AT (0, 0).
-		PRINT "INCLINATION: " + profile_list[incl_col + profile_line * proflie_col_num] AT (0, 1).
-		PRINT "THROTTLE: " + profile_list[throt_col + profile_line * proflie_col_num] AT (0, 2).
-		PRINT "PROFILE ALT: " + profile_list[alt_col + profile_line * proflie_col_num] + " - " + profile_list[alt_col + (profile_line + 1) * proflie_col_num] AT (0, 3).
-		PRINT "ACTUAL ALT: " + ALTITUDE AT (0, 4).
-		PRINT "Target_APO: " + target_APO AT (0, 5).
-
-		WAIT 0. 
-	}
-
-	LOCK THROTTLE TO 0.
-	TOGGLE LIGHTS.
-
-	WAIT UNTIL ALTITUDE > 70000.
-
-	PRINT "Ascent completed.".
-
+	return _Incl. // Current inclination for steering
 }
 
-FUNCTION EXEC_CIRCULARIZE { 
-	PARAMETER target_PERI.
-	CLEARSCREEN.
-	
-	SET dV_LIST TO dV_CALC_Hohmann(PERIAPSIS, target_PERI).
+function AscProfile {
+	parameter profile_list.
+	parameter target_apo.
 
-	PRINT "dV needed: " + dV_LIST AT (0,20).
-	PRINT "dV to Burn: " + dV_LIST[1] AT (0,21).
-	PRINT "From R1: " + PERIAPSIS AT (0,27).
-	PRINT "To R2: " + target_PERI AT (0,28).
+	set profile_line to 0.
+	set proflie_col_num to 3.
+	set last_line to (profile_list:length / proflie_col_num - 1).
 
-	SET Burn_Time TO Time_CALC_MNV(dV_LIST[1]).
-	PRINT "Burn time: " + Burn_Time AT (0,4).
+	set alt_col to 0.
+	set incl_col to 1.
+	set throt_col to 2.
 
-	LOCK STEERING TO PROGRADE.
+	local lock dApo to abs(apoapsis - target_apo).
 
-	UNTIL ETA:APOAPSIS <= Burn_Time/2 {
-		PRINT "ETA to burn: " + (ETA:APOAPSIS - Burn_Time/2) AT (0,5).
-		WAIT 0.
-	}
-	
-	LOCK THROTTLE TO 1.
-	PRINT "Burning..." AT (0,7).
-	
-	WHEN PERIAPSIS >= target_PERI THEN {
-		LOCK THROTTLE TO 0.
-		PRINT "Orbit reached." AT (0,7).
-		RETURN FALSE.
+	when Altitude >= profile_list[alt_col + (profile_line + 1) * proflie_col_num] then {
+			set profile_line to profile_line + 1.
+			if (last_line - profile_line) > 0 {
+				return true.	
+			} else {
+				return false.
+			}
 	}
 
-	UNTIL PERIAPSIS >= target_PERI {
-		PRINT "Target_PERI: " + target_PERI AT (0,8).
-		PRINT "PERIAPSIS: " + PERIAPSIS AT (0,9).
-		WAIT 0.
+	when profile_list[incl_col + (profile_line + 1) * proflie_col_num] = 0 then {
+		lock Steering to Prograde.
+		return false.
 	}
+
+	lock Steering to Heading(90,SetInclination(
+		profile_list[incl_col + (profile_line + 0) * proflie_col_num],	// _Incl_0
+		profile_list[incl_col + (profile_line + 1) * proflie_col_num],	// _Incl_1
+		profile_list[alt_col + (profile_line + 0) * proflie_col_num],	// _Alt_0
+		profile_list[alt_col + (profile_line + 1) * proflie_col_num])	// _Alt_1
+	).
+
+
+	lock Throttle to min(profile_list[throt_col + profile_line * proflie_col_num], max(dApo / (target_apo * 0.05), 0.1)).
+	
+	Stage.
+	
+	clearscreen.
+	until apoapsis > target_apo {
+		
+		set ThrIsp to ENGTHRUSTISP().				// EngThrustIsp возвращает суммарную тягу и средний Isp по всем активным двигателям.
+		set AThr to ThrIsp[0]*Throttle/(ship:mass).	// Ускорение, которое сообщают ракете активные двигатели при тек. массе.
+
+		wait 0.
+	}.
+
+	lock Throttle to 0.
+	lock Steering to prograde.
+	
+	wait 1.
 }
 
 //=======================================MAIN=========================================
 
-RUNPATH ("1:/libs.ks").
+runpath("1:/libs.ks").
 
 SET ascent_profile TO LIST (
-//ALT, 	BEARING,	INCLINATION,	THROT
-0,			90,			90,				1.0,
-5000,		90,			85,				1.0,
-10000,		90,			80,				1.0,
-15000,		90,			45,				0.9,
-30000,		90,			25,				0.9,
-60000,		90,			0,				0.5
+	//up to ALT,	INCLINATION,	THROT
+	0,				90,				1.0,
+	8000,			90,				1.0,
+	10000,			80,				1.0,
+	15000,			70,				1.0,
+	20000,			45,				1.0,
+	90000,			0,				1.0
 ).
 
-STAGE.
-EXEC_ASC_PROFILE(ascent_profile, 100000).
-EXEC_CIRCULARIZE(APOAPSIS).
+when Maxthrust < 0.001 then {	//Stage_dirty - to refactor
+	stage.
+	return true.
+}
 
-PRINT "Script execution completed." AT (0,10).
-WAIT 15.
+when Altitude > 60000 then {	//Activate antenna - REFACTOR - make function to activate antennas
+	Toggle Brakes.
+}
+
+AscProfile(ascent_profile, 90000).
+CIRC_MNV().
+
+print "Script execution completed." AT (0,9).
+lock steering to prograde + R(-90,0,0). //Orient solar panels to the Kerbol-Sun
+WAIT_VISUAL(20,0,0).

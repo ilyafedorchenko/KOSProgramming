@@ -12,7 +12,6 @@ function SetInclination {
 	return _Incl. // Current inclination for steering
 }
 
-
 function AscProfile {
 	parameter profile_list.
 	parameter target_apo.
@@ -94,11 +93,6 @@ when Altitude > 60000 then {	//Activate antenna - REFACTOR - make function to ac
 AscProfile(ascent_profile, 90000).
 CIRC_MNV().
 
-//STAGE.
-//EXEC_CIRCULARIZE(APOAPSIS).
-
 print "Script execution completed." AT (0,9).
 lock steering to prograde + R(-90,0,0). //Orient solar panels to the Kerbol-Sun
 WAIT_VISUAL(20,0,0).
-
-//Make function for Node Execution (wait for node to be set, prepare for execution)
