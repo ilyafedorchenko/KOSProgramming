@@ -1,26 +1,46 @@
-// Makes Hohhman transfer from circular orbit to target orbit
+// Makes Hohhman transfer from circular orbit to target circular orbit with target phase angle
+// Randezvous: target phase angle = 0 
+// Sat constellation: target phase angle = 90 / 130
 
 RUNPATH ("1:/libs.ks").
 
-set target_Alt TO 440000.
+set target_Alt to 440000.
+set target_PhaseAng to 90.
+set target_Vess to vessel("ComSat-3").
+set startBurnErr to 0.00002. // Error tolerance for ISH
+
 set cur_Alt to (apoapsis+periapsis)/2.
+
+//============================ Wait for phase angle =================================
+
+set vel_grad to 360 / target_Vess:orbit:period.
+set r1 to cur_Alt + body:radius.
+set r2 to target_Alt + body:radius.
+set Th to constant:pi * sqrt(((r1 + r2) ^ 3)/(8 * body:mu)). // период полуорбиты до Ap
+set phaseAngStartBurn to 360 + (target_PhaseAng - Th * vel_grad). // расчет фазового угла начала маневра
+
+clearscreen.
+
+if target_Alt > cur_Alt {
+		lock steering to prograde.
+	} else if target_Alt < cur_Alt {
+		lock steering to retrograde.
+	} else {
+		reboot.
+	}
+
+until ISH(phaseAngStartBurn,PHASEANGLE_TO_VESS(target_Vess:name),startBurnErr) {
+	print "Phase angle to start burn: " + phaseAngStartBurn at (0,1).
+	print "Actual phase angle to " + target_Vess:name + " : " + PHASEANGLE_TO_VESS(target_Vess:name) at (0,2).
+} 
+
+//================================== Maneuver =======================================
+
+
 set dV_LIST to dV_CALC_HOHMANN(cur_Alt, target_Alt).
 set target_min_T to 1. // желаемое min время маневра
 set ActEngs to ACTIVEENGINES().
-
-if target_Alt > cur_Alt {
-	lock steering to prograde.
-	set burnNode to 1.
-} else if target_Alt < cur_Alt {
-	lock steering to retrograde.
-	set burnNode to -1.
-} else {
-	reboot.
-}
-
-clearscreen.
-print dV_LIST at (0,1).
-WAIT_VISUAL(10,0,0).
+set burnNode to 0.
 
 FOR dV_x IN dV_LIST {
 
@@ -49,8 +69,6 @@ FOR dV_x IN dV_LIST {
 		print "ETA to burn: " + (eta:apoapsis - Burn_Time/2) AT (0,6).
 		wait 0.
 		}
-	} else {
-		break.
 	}
 	
 	set endBurnT to time:seconds + Burn_Time.
@@ -86,14 +104,25 @@ FOR dV_x IN dV_LIST {
 	unlock remain_T.
 
 	lock throttle to 0.
-	set burnNode to -burnNode.
+	
+	if target_Alt > cur_Alt {
+		set burnNode to -1.
+	} else if target_Alt < cur_Alt {
+		set burnNode to 1.
+	} else {
+		reboot.
+	}
+
+
+
 	for en in ActEngs {
 		set en:thrustlimit to 100.
 	}
 	WAIT_VISUAL(10,0,0).
 }
 
-print "Script execution completed." at (0,15).
-lock steering to heading(0,0).
+TUNE_ORB_T(target_Vess:orbit:period).
 
+print "Script execution completed." at (0,15).
+lock steering to prograde + R(-90,0,0). //Orient solar panels to the Kerbol-Sun
 WAIT_VISUAL(10,0,0).

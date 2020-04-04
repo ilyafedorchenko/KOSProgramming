@@ -1,4 +1,4 @@
-//
+// Ascend ship to target orbit
 
 function SetInclination {
 	parameter _Incl_0.		// Starting inclination
@@ -90,7 +90,7 @@ when Altitude > 60000 then {	//Activate antenna - REFACTOR - make function to ac
 	Toggle Brakes.
 }
 
-AscProfile(ascent_profile, 90000).
+AscProfile(ascent_profile, 81000).
 CIRC_MNV().
 
 print "Script execution completed." AT (0,9).

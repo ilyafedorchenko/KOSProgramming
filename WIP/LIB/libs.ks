@@ -52,18 +52,17 @@ FUNCTION dV_CALC_HOHMANN {	// Calcs dV for to consecutive burns to reach desired
 }
 
 FUNCTION TIME_CALC_MNV {	// Calc time in sec to burn for given dV
-	PARAMETER dV.
+	parameter dV.
 
-	LIST ENGINES IN ShipEngines.
-	LOCAL NumberOfEngines IS ShipEngines:LENGTH.
+	set ActiveEngThrustIsp to ENGTHRUSTISP().
 
-	LOCAL f IS ShipEngines[NumberOfEngines - 1]:POSSIBLETHRUST * 1000. // Engine Thrust in Newtons (kg * m/s^2)
-	LOCAL m IS SHIP:MASS * 1000.	// Staring mass (kg)
-	LOCAL e IS CONSTANT:E.			// Base of natural log
-	LOCAL p IS ShipEngines[NumberOfEngines - 1]:ISP.	// Engines Isp (s)
-	LOCAL g IS CONSTANT:g0.			// Grav accel consdtant
+	local f is ActiveEngThrustIsp[0] * 1000. // Engine Thrust in Newtons (kg * m/s^2)
+	local m is ship:mass * 1000.	// Staring mass (kg)
+	local e is constant:e.			// Base of natural log
+	local p is ActiveEngThrustIsp[1].	// Engines Isp (s)
+	local g is constant:g0.			// Grav accel consdtant
 
-	RETURN g * m * p * (1 - e^(-dV / (g * p))) / f.
+	return g * m * p * (1 - e^(-abs(dV) / (g * p))) / f.
 }
 
 FUNCTION dV_CALC_SHIP {	// Calc total dV for current first Engine of all Engines. Engine should be activated
@@ -76,7 +75,6 @@ FUNCTION dV_CALC_SHIP {	// Calc total dV for current first Engine of all Engines
 
 FUNCTION TIMER { // Returns TRUE when some time in future reached
 	PARAMETER t1. // time in future
-
 	IF (t1 - TIME:SECONDS <= 0) {
 		RETURN TRUE.
 	} ELSE {
@@ -137,21 +135,12 @@ FUNCTION TAGGEDTANKSRESCOUNT { // Returns amount of resources[0] in tanks with g
 	RETURN FuelAmount.
 }
 
-FUNCTION ENGTHRUSTISP {	// EngThrustIsp возвращает суммарную тягу и средний Isp по всем активным двигателям.
+FUNCTION ENGTHRUSTISP {	// EngThrustIsp возвращает list(суммарную тягу, средний Isp) по всем активным двигателям.
 	//создаем пустой лист ens
-  set ens to list().
-  ens:clear.
+  set ens to ACTIVEENGINES().
   set ens_thrust to 0.
   set ens_isp to 0.
-	//запихиваем все движки в лист myengines
-  list engines in myengines.
-	
-	//забираем все активные движки из myengines в ens.
-  for en in myengines {
-    if en:ignition = true and en:flameout = false {
-      ens:add(en).
-    }
-  }
+  
 	//собираем суммарную тягу и Isp по всем активным движкам
   for en in ens {
     set ens_thrust to ens_thrust + en:availablethrust.
@@ -195,4 +184,82 @@ FUNCTION CIRC_MNV {	// Функция завершения вывода кора
 	
 	unlock all.
 	LOCK Throttle to 0. //Мы на орбите, выключаем тягу.
+}
+
+FUNCTION ACTIVEENGINES { //Returns list() of active engines
+	set ens to list().
+
+	ens:clear.
+	list engines in myengines.
+	
+	//забираем все активные движки из myengines в ens.
+	for en in myengines {
+		if en:ignition = true and en:flameout = false {
+		ens:add(en).
+		}
+	}
+
+	return ens.
+}
+
+FUNCTION PHASEANGLE_TO_VESS { // Returns phase angle from scurrent vessel to targe vessel, orbiting the same body
+	parameter targ_ves_name. // target name - string
+
+	set targ_Vess to vessel(targ_ves_name).
+	set a to ship:orbit:position - ship:orbit:body:position.
+	set b to targ_Vess:orbit:position - targ_Vess:orbit:body:position.
+	set ab_cross to vcrs(a,b).
+
+	set ship_vel to ship:velocity:orbit.
+	set ship_vel_normal to vcrs(ship_vel,a).
+	set PhaseAngle to vang(a,b).
+
+	if vdot(ab_cross,ship_vel_normal) > 0 {set PhaseAngle to 360 - PhaseAngle.}
+
+  	return PhaseAngle. // degrees
+}
+
+function TUNE_ORB_T { // Tune orbit period T to target value in sec. Precision 0.001 sec
+
+	parameter _targetT. // parameter target orbit period in seconds
+
+	clearscreen.
+	
+	if _targetT > ship:orbit:period {
+		lock steering to prograde.	
+	} else if _targetT < ship:orbit:period {
+		lock steering to retrograde.	
+	} else {
+		reboot.
+	}
+	
+	WAIT_VISUAL(10,0,0).
+	
+	print "Orbite period	 : " + ship:orbit:period at (0,1).
+	print "Target orb period : " + _targetT at (0,2).
+	
+	set dTcoeff to 1. //abs(ship:orbit:period - _targetT) / ship:orbit:period.
+	set enlist to ACTIVEENGINES().
+	for en in enlist {
+		set en:thrustlimit to dTcoeff.
+	}
+	
+	lock throttle to 1.
+	
+	until ISH(_targetT, ship:orbit:period, 0.0000001){
+		print "Orbite period: " + ship:orbit:period at (0,3).
+		print "Err: " + abs(ship:orbit:period - _targetT) at (0,4).
+	
+		if abs(ship:orbit:period - _targetT) < 1 {
+			lock throttle to 0.1.//round(abs(ship:orbit:period - _targetT),1).
+			
+			if abs(ship:orbit:period - _targetT) < 0.1 {
+				lock throttle to 0.01.//round(abs(ship:orbit:period - _targetT),1).
+			}
+		}
+	
+		wait 0.
+	}
+	
+	lock throttle to 0.	
 }
