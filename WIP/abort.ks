@@ -47,6 +47,7 @@ runpath("1:/libs.ks").
 //============================== MAIN =====================================
 
 clearscreen.
+ACTIVEENGINES_THR_LIM(100).
 
 print "Starting abort procedure - v 0.3.1" at (0,1).
 
@@ -54,7 +55,7 @@ if Periapsis >= 70000 {
 	print "Starting deorbit procedure" at (0,2).
 	lock Throttle to 0.
 	lock Steering to Retrograde.
-	WAIT_VISUAL(5,0,0).
+	WAIT_VISUAL(15,0,0).
 	print "Start burning" at (0,3).
 	lock Throttle to 1.
 	until Periapsis < 70000 {
@@ -63,10 +64,13 @@ if Periapsis >= 70000 {
 	}
 } 
 
-lock Throttle to 0.
+//lock Throttle to 0.
 
 print "Suborbit." at (0,5).
+
+wait until Maxthrust < 0.001.
 StageAll().
+
 lock Steering to SrfRetrograde.
 WAIT_VISUAL(5,0,0).
 

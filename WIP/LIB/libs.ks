@@ -7,8 +7,6 @@ FUNCTION WAIT_VISUAL{	// Visualize waiting period in seconds [###....]
 
 	LOCAL scale IS "".
 
-	PRINT "                                                                       " AT (col_, row_).
-
 	FROM {LOCAL x IS 0.} UNTIL x = t STEP {SET x TO x + 1.} DO {
 		SET scale TO scale + ".".
 	}
@@ -45,10 +43,21 @@ FUNCTION dV_CALC_HOHMANN {	// Calcs dV for to consecutive burns to reach desired
 	// Mu - gravetational parameter of the body
 	
 
-	LOCAL dV1 IS ROUND(ORB_VEL(r1) * (SQRT(2 * (r2 + BODY:RADIUS)/(r1 + r2 + 2 * BODY:RADIUS)) - 1), 2).
-	LOCAL dV2 IS ROUND(ORB_VEL(r2) * (1 - SQRT(2 * (r1 + BODY:RADIUS)/(r1 + r2 + 2 * BODY:RADIUS))), 2).
+	LOCAL dV1 IS ORB_VEL(r1) * (SQRT(2 * (r2 + BODY:RADIUS)/(r1 + r2 + 2 * BODY:RADIUS)) - 1).
+	LOCAL dV2 IS ORB_VEL(r2) * (1 - SQRT(2 * (r1 + BODY:RADIUS)/(r1 + r2 + 2 * BODY:RADIUS))).
 
 	RETURN LIST(dV1, dV2).
+}
+
+FUNCTION r2_CALC_HOHMANN { 	// Calcs new Ap/Pe (r2) to change orbit half-period to desired Th
+	parameter r1. // initial orbit - ship:altitude
+	parameter Th. // target Th half-period
+	
+	// Mu - gravetational parameter of the body
+	
+	local r2 is 2 * (ship:body:Mu * (Th / constant:pi)^2)^(1/3) - (ship:body:radius + r1).
+
+	return (r2 - ship:body:radius).
 }
 
 FUNCTION TIME_CALC_MNV {	// Calc time in sec to burn for given dV
@@ -202,6 +211,16 @@ FUNCTION ACTIVEENGINES { //Returns list() of active engines
 	return ens.
 }
 
+FUNCTION ACTIVEENGINES_THR_LIM { //Adjust thr limit for all active engines [0..100]
+	parameter thr_lim.
+
+	set ens to ACTIVEENGINES().
+
+	for en in ens {
+		set en:thrustlimit to thr_lim.
+	}
+}
+
 FUNCTION PHASEANGLE_TO_VESS { // Returns phase angle from scurrent vessel to targe vessel, orbiting the same body
 	parameter targ_ves_name. // target name - string
 
@@ -219,7 +238,7 @@ FUNCTION PHASEANGLE_TO_VESS { // Returns phase angle from scurrent vessel to tar
   	return PhaseAngle. // degrees
 }
 
-function TUNE_ORB_T { // Tune orbit period T to target value in sec. Precision 0.001 sec
+FUNCTION TUNE_ORB_T { // Tune orbit period T to target value in sec. Precision 0.001 sec
 
 	parameter _targetT. // parameter target orbit period in seconds
 
@@ -233,12 +252,12 @@ function TUNE_ORB_T { // Tune orbit period T to target value in sec. Precision 0
 		reboot.
 	}
 	
-	WAIT_VISUAL(10,0,0).
+	WAIT_VISUAL(20,0,0).
 	
 	print "Orbite period	 : " + ship:orbit:period at (0,1).
 	print "Target orb period : " + _targetT at (0,2).
 	
-	set dTcoeff to 1. //abs(ship:orbit:period - _targetT) / ship:orbit:period.
+	set dTcoeff to 100. //abs(ship:orbit:period - _targetT) / ship:orbit:period.
 	set enlist to ACTIVEENGINES().
 	for en in enlist {
 		set en:thrustlimit to dTcoeff.
