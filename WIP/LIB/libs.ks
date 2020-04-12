@@ -1,5 +1,17 @@
 // All handy functions
 
+FUNCTION TIME_FORMAT { // returns string "DD:HH:MM:SS"
+	parameter t. // seconds
+
+	set t to floor(t).
+	set d to floor(t / 86400).
+	set h to floor((t - d*86400) / 3600).
+	set m to floor((t - d*86400 - h*3600) / 60).
+	set s to (t - d*86400 - h*3600 - m*60).
+
+	return d +"d " + h + "h " + m + "m " + s + "s ".
+}
+
 FUNCTION WAIT_VISUAL{	// Visualize waiting period in seconds [###....]
 	PARAMETER t. //How much seconds to wait
 	PARAMETER col_. // AT (col_,)
@@ -33,7 +45,7 @@ FUNCTION ISH {	// RETURNS TRUE if actual value is within tolerance delat (in %) 
 
 FUNCTION ORB_VEL {	//Orbital velocity for specific height of the orbit
 	PARAMETER targeted_h.
-	RETURN ROUND(SQRT(BODY:Mu / (BODY:RADIUS + targeted_h)), 2).
+	RETURN SQRT(BODY:Mu / (BODY:RADIUS + targeted_h)).
 }
 
 FUNCTION dV_CALC_HOHMANN {	// Calcs dV for to consecutive burns to reach desired orbit altitude
@@ -93,10 +105,10 @@ FUNCTION TIMER { // Returns TRUE when some time in future reached
 
 FUNCTION WPT_COORD { // Returns WAYPOINT structure for selected WAYPOINT
 
-	LOCAL my_WPS TO ALLWAYPOINTS().
-			FOR t in my_WPS {
-				IF t:ISSELECTED {
-					RETURN (t).
+	local my_wps to allwaypoints().
+			for t in my_wps {
+				if t:isselected {
+					return (t).
 				}
 			}
 }
@@ -221,7 +233,7 @@ FUNCTION ACTIVEENGINES_THR_LIM { //Adjust thr limit for all active engines [0..1
 	}
 }
 
-FUNCTION PHASEANGLE_TO_VESS { // Returns phase angle from scurrent vessel to targe vessel, orbiting the same body
+FUNCTION PHASEANGLE_TO_VESS { // Returns phase angle from current vessel to targe vessel, orbiting the same body
 	parameter targ_ves_name. // target name - string
 
 	set targ_Vess to vessel(targ_ves_name).
@@ -238,9 +250,35 @@ FUNCTION PHASEANGLE_TO_VESS { // Returns phase angle from scurrent vessel to tar
   	return PhaseAngle. // degrees
 }
 
+FUNCTION PHASEANGLE_TO_OBJ { // Returns phase angle from current vessel to targe object (vessel or body), orbiting the same body
+	parameter targ_obj_name. // target name - string
+
+	if bodyexists(targ_obj_name) {
+
+	set targ_obj to body(targ_obj_name).
+	set a to ship:orbit:position - ship:orbit:body:position.
+	set b to targ_obj:orbit:position - targ_obj:orbit:body:position.
+	set ab_cross to vcrs(a,b).
+
+	set ship_vel to ship:velocity:orbit.
+	set ship_vel_normal to vcrs(ship_vel,a).
+	set PhaseAngle to vang(a,b).
+
+	if vdot(ab_cross,ship_vel_normal) > 0 {set PhaseAngle to 360 - PhaseAngle.}
+
+  	return PhaseAngle. // degrees
+
+	}
+
+	return PHASEANGLE_TO_VESS(targ_obj_name). // wrapper for PHASEANGLE_TO_VESS
+
+}
+
 FUNCTION TUNE_ORB_T { // Tune orbit period T to target value in sec. Precision 0.001 sec
 
 	parameter _targetT. // parameter target orbit period in seconds
+
+	//!!!!!  Add wait for Apo to encrease period and Peri to shroten
 
 	clearscreen.
 	

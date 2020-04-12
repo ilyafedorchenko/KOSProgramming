@@ -22,7 +22,7 @@ FUNCTION WAIT_VISUAL{	// Visualize waiting period [###....]
 }
 
 FUNCTION HAS_FILE_EXECUTE {	//result - true or false whether update file exists in CommandCenter
-							//empty param HAS_FILE_EXECUTE("","")
+	//empty param HAS_FILE_EXECUTE("","")
 	PARAMETER file_path. 	//path "execute_on_ship/shipname.execute.ks"
 	PARAMETER vol.			// 1 or 0(Archive)
 	
@@ -37,7 +37,7 @@ FUNCTION HAS_FILE_EXECUTE {	//result - true or false whether update file exists 
 }
 
 FUNCTION DOWNLOAD_UPDATE{	//result - file 1:/execute.ks ready for execution
-							//empty param HAS_FILE_EXECUTE("","")
+	//empty param HAS_FILE_EXECUTE("","")
 	PARAMETER file_path. 	//path "execute_on_ship/shipname.execute.ks"
 	PARAMETER vol.			// 1 or 0(Archive)
 	
@@ -72,6 +72,9 @@ FUNCTION DELAY{
 
 //============================MAIN LOOP=========================================
 
+set terminal:width to 60.
+set terminal:height to 20.
+core:part:getmodule("kOSProcessor"):doevent("Open Terminal").
 SET execute_script TO SHIP:NAME + ".execute.ks".
 SWITCH TO 1.
 
