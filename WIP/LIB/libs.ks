@@ -103,14 +103,15 @@ FUNCTION TIMER { // Returns TRUE when some time in future reached
 	}
 }
 
-FUNCTION WPT_COORD { // Returns WAYPOINT structure for selected WAYPOINT
+FUNCTION WPT_COORD { // Returns WAYPOINT structure for selected WAYPOINT else returns all waypoints
 
 	local my_wps to allwaypoints().
-			for t in my_wps {
-				if t:isselected {
-					return (t).
-				}
-			}
+		for t in my_wps {
+			if t:isselected {
+				return list(t).
+			} 
+		}
+		return allwaypoints().
 }
 
 FUNCTION APOBURN {	// Считает угол к горизонту в апоцентре при циркуляризации.

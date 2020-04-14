@@ -83,6 +83,10 @@ IF HAS_FILE_EXECUTE("execute.ks", 1){
 	DELETEPATH("1:/execute.ks").
 }
 
+IF EXISTS("1:/upload.txt"){
+	UPLOAD("upload.txt").
+}
+
 CLEARSCREEN.
 PRINT "Waiting for execution script." AT(0,1).
 PRINT "Local scripts:" AT(0,2).
