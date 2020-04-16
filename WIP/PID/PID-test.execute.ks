@@ -71,6 +71,7 @@ set next_step to "Set target". // list of allwaypoints
 // -------------------------- Waypoint selection ---------------------------------
 
 until next_step = "Launch" {
+	print next_step at (0,0).
 	set wps to WPT_COORD().
 	if wps:length <> 1 {
 		clearscreen.
@@ -101,7 +102,7 @@ set thr to ENGTHRUSTISP().
 set twr_targ to thr[0].
 
 until next_step = "Wait approach" {
-
+	print next_step at (0,0).
 	clearscreen.
 	print "Current wpt name: "	+ spot:name at(0,1).
 	print "Distance: " + spot:geoposition:distance at(0,2).
@@ -115,7 +116,7 @@ until next_step = "Wait approach" {
 		set pitch to 45.
 	} else if altitude < 5000 {
 		set pitch to 45.
-	} else if altitude < 10000 {
+	} else if altitude < 6000 {
 		set pitch to 40.
 	} else {
 		set next_step to "Wait approach".
@@ -129,9 +130,9 @@ until next_step = "Wait approach" {
 }
 
 // ---------------------------- "Wait approach" ----------------------------------
-
+set dS_0 to dS.
 until next_step = "Adjust impact pos" {
-
+	print next_step at (0,0).
 	clearscreen.
 	print "Current wpt name: "	+ spot:name at(0,1).
 	print "Distance: " + spot:geoposition:distance at(0,2).
@@ -140,11 +141,12 @@ until next_step = "Adjust impact pos" {
 	print "Distance diff: ---" at(0,5).
 
 	if addons:tr:hasimpact {
-		set dS to (spot:geoposition:distance - addons:tr:impactpos:distance).
+		set dS to (spot:geoposition:distance - addons:tr:impactpos:distance) + 300.
 		print "Distance diff: " +  dS at(0,5).
-		set throt to min(abs(dS)/5000,1). // ???? use PID to achieve 0 dS
-		if abs(dS) <= 100 {
+		set throt to min(abs(dS)/dS_0,1). // ???? use PID to achieve 0 dS
+		if abs(dS) <= 180 {
 			set throt to 0.
+			lock steering to -spot:geoposition:position.
 			set next_step to "Adjust impact pos".
 		}
 	}
@@ -155,6 +157,7 @@ until next_step = "Adjust impact pos" {
 // ------------------------- "Adjust impact pos" ---------------------------------
 
 until next_step = "Land" {
+	print next_step at (0,0).
 
 	set tMNV to TIME_CALC_MNV(VelZ:mag).
 	set _tti to 0.
@@ -172,19 +175,31 @@ until next_step = "Land" {
 		print "TTI: " + _tti at(0,4).
 	}
 
-	if dS < -10 {
-		lock steering to (-VHor).
-		//set addons:tr:retrograde to true.
-		wait until vang(-VHor, ship:facing:vector) < 0.5.
-		set throt to min(abs(dS)/10,1). 
-	} else if dS > 10 {
-		lock steering to (VHor).
-		//set addons:tr:prograde to true.
-		wait until vang(VHor, ship:facing:vector) < 0.5.
-		set throt to min(abs(dS)/10,1). 
-	} else {set throt to 0.}
+	//if dS < -10 {
+	//	lock steering to (-VHor).
+	//	//set addons:tr:retrograde to true.
+	//	wait until vang(-VHor, ship:facing:vector) < 0.5.
+	//	set throt to min(abs(dS)/5000,1). 
+	//} else if dS > 10 {
+	//	lock steering to (VHor).
+	//	//set addons:tr:prograde to true.
+	//	wait until vang(VHor, ship:facing:vector) < 0.5.
+	//	set throt to min(abs(dS)/5000,1). 
+	//} else {set throt to 0.}
 	
 	if _tti <= tMNV {set next_step to "Land".}
+
+//draw vectors
+	//set ZVecDraw to vecdraw(V(3,0,0),VZ, rgb(1,0,0), "Z", VZ:mag, true,0.01).
+	//set YVecDraw to vecdraw(V(3,0,0),VY, rgb(1,0,0), "Y", VY:mag, true,0.01).
+	//set XVecDraw to vecdraw(V(3,0,0),VX, rgb(1,0,0), "X", VZ:mag, true,0.01).
+
+	//set VelVecDraw to vecdraw(V(3,0,0),ship:velocity:surface, rgb(0,0,1), "Vel", ship:velocity:surface:mag,true,0.01).
+	//set H_VelVecDraw to vecdraw(V(3,0,0),VHor, rgb(1,1,0), "H_Vel", VHor:mag/10,true,0.01).
+	//set Z_VelVecDraw to vecdraw(V(3,0,0),VelZ, rgb(0,1,0), "Z_Vel", VelZ:mag/10,true,0.01).
+	//set X_VelVecDraw to vecdraw(V(3,0,0),VelX, rgb(0,1,0), "H_X_Vel", VelX:mag/10,true,0.01).
+	//set Y_VelVecDraw to vecdraw(V(3,0,0),VelY, rgb(0,1,0), "H_Y_Vel", VelY:mag/10,true,0.01).
+
 
 	wait 0.
 }
@@ -192,22 +207,24 @@ until next_step = "Land" {
 // -------------------------------- "Land" ---------------------------------------
 
 until next_step = "Landed" {
+	print next_step at (0,0).
 	
 	set gear to alt:radar<=30.
 
 	clearscreen.
 	print "Current wpt name: "	+ spot:name at(0,1).
-	print "Altitude: "	+ alt:radar at(0,1).
-	print "VZ mag: " + VelZ:mag at(0,3).
+	print "Altitude: "	+ alt:radar at(0,2).
+	print "Distance: " + spot:geoposition:distance at(0,3).
+	print "VZ mag: " + VelZ:mag at(0,4).
 	
 	if alt:radar > 50 {
 		lock steering to srfretrograde.
 		set twr_targ to throt_coeff(20.0).
 	} else if alt:radar <= 50 and alt:radar > 10 {
-		set twr_targ to throt_coeff(10.0).
+		set twr_targ to throt_coeff(5.0).
 	} else if alt:radar <= 10 and alt:radar > 5 {
 		lock steering to VZ.
-		set twr_targ to throt_coeff(2.0).
+		set twr_targ to throt_coeff(1.0).
 	} else if  alt:radar <= 5 {
 		set done to true.
 	}
@@ -260,7 +277,8 @@ WAIT_VISUAL(30,0,0).
 //	//print "VelZ: " + VelZ:mag at (0,8).
 //	//print "g: " + g at (0,9).
 //	
-//	//draw vectors
+//	
+//}//draw vectors
 //	set ZVecDraw to vecdraw(V(3,0,0),VZ, rgb(1,0,0), "Z", VZ:mag, true,0.01).
 //	set YVecDraw to vecdraw(V(3,0,0),VY, rgb(1,0,0), "Y", VY:mag, true,0.01).
 //	set XVecDraw to vecdraw(V(3,0,0),VX, rgb(1,0,0), "X", VZ:mag, true,0.01).
@@ -272,4 +290,3 @@ WAIT_VISUAL(30,0,0).
 //	set Y_VelVecDraw to vecdraw(V(3,0,0),VelY, rgb(0,1,0), "H_Y_Vel", VelY:mag,true,0.01).
 //
 //	//wait 0.
-//}
